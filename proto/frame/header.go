@@ -6,6 +6,12 @@ const (
 	headerSize = 8
 )
 
+//
+// byte[0-1] - length
+// byte[2]   - flags
+// byte[3]   - type
+// byte[4-7] - stream-id
+//
 type Header []byte
 
 func newHeader() Header {
