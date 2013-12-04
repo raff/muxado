@@ -24,21 +24,24 @@ type ConcurrentStreamMap struct {
 
 func (m *ConcurrentStreamMap) Get(id frame.StreamId) (s stream, ok bool) {
 	m.RLock()
+        defer m.RUnlock()
+
 	s, ok = m.table[id]
-	m.RUnlock()
 	return
 }
 
 func (m *ConcurrentStreamMap) Set(id frame.StreamId, str stream) {
 	m.Lock()
+        defer m.Unlock()
+
 	m.table[id] = str
-	m.Unlock()
 }
 
 func (m *ConcurrentStreamMap) Delete(id frame.StreamId) {
 	m.Lock()
+	defer m.Unlock()
+
 	delete(m.table, id)
-	m.Unlock()
 }
 
 func (m *ConcurrentStreamMap) Each(fn func(frame.StreamId, stream)) {

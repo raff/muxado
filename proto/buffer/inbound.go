@@ -39,6 +39,7 @@ func NewInbound(size int) *Inbound {
 
 func (b *Inbound) SetDeadline(t time.Time) {
 	b.L.Lock()
+	defer b.L.Unlock()
 
 	// set the deadline
 	b.deadline = t
@@ -55,20 +56,21 @@ func (b *Inbound) SetDeadline(t time.Time) {
 		b.Broadcast()
 	})
 
-	b.L.Unlock()
 }
 
 func (b *Inbound) SetError(err error) {
 	b.L.Lock()
+	defer b.L.Unlock()
+
 	b.err = err
 	b.Broadcast()
-	b.L.Unlock()
 }
 
 func (b *Inbound) GetError() (err error) {
 	b.L.Lock()
+	defer b.L.Unlock()
+
 	err = b.err
-	b.L.Unlock()
 	return
 }
 
@@ -83,6 +85,8 @@ func (b *Inbound) ReadFrom(rd io.Reader) (n int, err error) {
 		return 0, AlreadyClosed
 	}
 
+	defer b.L.Unlock()
+
 	// write directly to a reader's buffer, if possible
 	if b.waitingReader.buf != nil {
 		b.waitingReader.n, err = readInto(rd, b.waitingReader.buf)
@@ -95,7 +99,6 @@ func (b *Inbound) ReadFrom(rd io.Reader) (n int, err error) {
 			}
 
 			b.Broadcast()
-			b.L.Unlock()
 			return
 		}
 	}
@@ -106,12 +109,12 @@ func (b *Inbound) ReadFrom(rd io.Reader) (n int, err error) {
 	n += writeN
 
 	b.Broadcast()
-	b.L.Unlock()
 	return
 }
 
 func (b *Inbound) Read(p []byte) (n int, err error) {
 	b.L.Lock()
+	defer b.L.Unlock()
 
 	var wait *waitingReader
 
@@ -155,6 +158,5 @@ func (b *Inbound) Read(p []byte) (n int, err error) {
 		b.Wait()
 	}
 
-	b.L.Unlock()
 	return
 }

@@ -16,16 +16,18 @@ func NewOutbound(size int) *Outbound {
 
 func (b *Outbound) Increment(inc int) {
 	b.L.Lock()
+	defer b.L.Unlock()
+
 	b.val += inc
 	b.Broadcast()
-	b.L.Unlock()
 }
 
 func (b *Outbound) SetError(err error) {
 	b.L.Lock()
+	defer b.L.Unlock()
+
 	b.err = err
 	b.Broadcast()
-	b.L.Unlock()
 }
 
 func (b *Outbound) Decrement(dec int) (ret int, err error) {
@@ -34,6 +36,8 @@ func (b *Outbound) Decrement(dec int) (ret int, err error) {
 	}
 
 	b.L.Lock()
+        defer b.L.Unlock()
+
 	for {
 		if b.err != nil {
 			err = b.err
@@ -54,6 +58,5 @@ func (b *Outbound) Decrement(dec int) (ret int, err error) {
 			b.Wait()
 		}
 	}
-	b.L.Unlock()
 	return
 }

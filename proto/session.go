@@ -114,6 +114,7 @@ func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId fram
 	//                  - send streamsyn
 	// - send streamsyn
 	s.wr.Lock()
+        defer s.wr.Unlock()
 
 	// get the next id we can use
 	nextId := frame.StreamId(atomic.AddUint32(&s.local.lastId, 2))
@@ -126,18 +127,15 @@ func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId fram
 
 	// write the frame
 	if err = s.syn.Set(nextId, relatedStreamId, priority, fin); err != nil {
-		s.wr.Unlock()
 		s.die(frame.InternalError, err)
 		return
 	}
 
 	if err = s.transport.WriteFrame(s.syn); err != nil {
-		s.wr.Unlock()
 		s.die(frame.InternalError, err)
 		return
 	}
 
-	s.wr.Unlock()
 	return str, nil
 }
 
@@ -164,21 +162,20 @@ func (s *Session) GoAway(errorCode frame.ErrorCode, debug []byte) (err error) {
 	}
 
 	s.wr.Lock()
+        defer s.wr.Unlock()
+
 	f := frame.NewWGoAway()
 	remoteId := frame.StreamId(atomic.LoadUint32(&s.remote.lastId))
 	if err = f.Set(remoteId, errorCode, debug); err != nil {
-		s.wr.Unlock()
 		s.die(frame.InternalError, err)
 		return
 	}
 
 	if err = s.transport.WriteFrame(f); err != nil {
-		s.wr.Unlock()
 		s.die(frame.InternalError, err)
 		return
 	}
 
-	s.wr.Unlock()
 	return
 }
 
@@ -210,9 +207,10 @@ func (s *Session) removeStream(id frame.StreamId) {
 // writeFrame writes the given frame to the transport and returns the error from the write operation
 func (s *Session) writeFrame(f frame.WFrame, dl time.Time) (err error) {
 	s.wr.Lock()
+	defer s.wr.Unlock()
+
 	s.conn.SetWriteDeadline(dl)
 	err = s.transport.WriteFrame(f)
-	s.wr.Unlock()
 	return
 }
 
@@ -312,6 +310,7 @@ func (s *Session) handleFrame(rf frame.RFrame) {
 
 			s.wr.Lock()
 			defer s.wr.Unlock()
+
 			s.transport.WriteFrame(fRst)
 			return
 		}

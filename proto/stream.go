@@ -111,8 +111,9 @@ func (s *Stream) SetReadDeadline(dl time.Time) error {
 
 func (s *Stream) SetWriteDeadline(dl time.Time) error {
 	s.writer.Lock()
+	defer s.writer.Unlock()
+
 	s.writeDeadline = dl
-	s.writer.Unlock()
 	return nil
 }
 
@@ -221,20 +222,19 @@ func (s *Stream) resetWith(errorCode frame.ErrorCode, resetErr error) {
 
 	// need write lock to make sure no data frames get sent after we send the reset
 	s.writer.Lock()
+	defer s.writer.Unlock()
 
 	// send it
 	if err := s.session.writeFrame(rst, zeroTime); err != nil {
-		s.writer.Unlock()
 		s.die(frame.InternalError, err)
 	}
-
-	s.writer.Unlock()
 }
 
 func (s *Stream) write(buf []byte, fin bool) (n int, err error) {
 	// a write call can pass a buffer larger that we can send in a single frame
 	// only allow one writer at a time to prevent interleaving frames from concurrent writes
 	s.writer.Lock()
+	defer s.writer.Unlock()
 
 	bufSize := len(buf)
 	bytesRemaining := bufSize
@@ -246,7 +246,6 @@ func (s *Stream) write(buf []byte, fin bool) (n int, err error) {
 		// this blocks until window is available and may not return all that we asked for
 		var writeSize int
 		if writeSize, err = s.outBuffer.Decrement(writeReqSize); err != nil {
-			s.writer.Unlock()
 			return
 		}
 
@@ -258,14 +257,12 @@ func (s *Stream) write(buf []byte, fin bool) (n int, err error) {
 
 		// make the frame
 		if err = s.wdata.Set(s.id, buf[start:end], finBit); err != nil {
-			s.writer.Unlock()
 			s.die(frame.InternalError, err)
 			return
 		}
 
 		// write the frame
 		if err = s.session.writeFrame(s.wdata, s.writeDeadline); err != nil {
-			s.writer.Unlock()
 			return
 		}
 
@@ -282,7 +279,6 @@ func (s *Stream) write(buf []byte, fin bool) (n int, err error) {
 		}
 	}
 
-	s.writer.Unlock()
 	return
 }
 
