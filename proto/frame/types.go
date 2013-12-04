@@ -34,6 +34,7 @@ const (
 	flagFin            = 0x1
 	flagStreamPriority = 0x2
 	flagRelatedStream  = 0x4
+	flagTransportInfo  = 0x8
 )
 
 func (ft flagsType) IsSet(f flagsType) bool {
