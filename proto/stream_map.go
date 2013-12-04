@@ -1,7 +1,7 @@
 package proto
 
 import (
-	"github.com/inconshreveable/muxado/proto/frame"
+	"github.com/raff/muxado/proto/frame"
 	"sync"
 )
 

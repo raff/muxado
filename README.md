@@ -108,7 +108,7 @@ muxado does contain some unidiomatic code.
 ## API documentation
 API documentation is available on godoc.org:
 
-[muxado API documentation](https://godoc.org/github.com/inconshreveable/muxado)
+[muxado API documentation](https://godoc.org/github.com/raff/muxado)
 
 ## What are its biggest drawbacks?
 Any stream-multiplexing library over TCP will suffer from head-of-line blocking if the next packet to service gets dropped.

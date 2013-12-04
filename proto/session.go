@@ -2,7 +2,7 @@ package proto
 
 import (
 	"fmt"
-	"github.com/inconshreveable/muxado/proto/frame"
+	"github.com/raff/muxado/proto/frame"
 	"net"
 	"reflect"
 	"sync"

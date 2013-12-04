@@ -1,7 +1,7 @@
 package muxado
 
 import (
-	"github.com/inconshreveable/muxado/proto/frame"
+	"github.com/raff/muxado/proto/frame"
 	"net"
 	"time"
 )

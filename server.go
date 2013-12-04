@@ -2,7 +2,7 @@ package muxado
 
 import (
 	"crypto/tls"
-	"github.com/inconshreveable/muxado/proto"
+	"github.com/raff/muxado/proto"
 	"net"
 )
 
