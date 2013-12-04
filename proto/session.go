@@ -32,11 +32,11 @@ type deadReason struct {
 }
 
 type DialInfo struct {
-    net, addr string
+	net, addr string
 }
 
 // factory function that creates new streams
-type streamFactory func(id, related frame.StreamId, priority frame.StreamPriority, finLocal bool, finRemote bool, windowSize uint32, sess session) stream
+type streamFactory func(id, related frame.StreamId, priority frame.StreamPriority, info frame.StreamInfo, finLocal bool, finRemote bool, windowSize uint32, sess session) stream
 
 // checks the parity of a stream id (local vs remote, client vs server)
 type parityFn func(frame.StreamId) bool
@@ -122,13 +122,13 @@ func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId fram
 	//                  - send streamsyn
 	// - send streamsyn
 	s.wr.Lock()
-        defer s.wr.Unlock()
+	defer s.wr.Unlock()
 
 	// get the next id we can use
 	nextId := frame.StreamId(atomic.AddUint32(&s.local.lastId, 2))
 
 	// make the stream
-	str := s.newStream(nextId, relatedStreamId, priority, fin, false, s.defaultWindowSize, s)
+	str := s.newStream(nextId, relatedStreamId, priority, info, fin, false, s.defaultWindowSize, s)
 
 	// add to to the stream map
 	s.streams.Set(nextId, str)
@@ -170,7 +170,7 @@ func (s *Session) GoAway(errorCode frame.ErrorCode, debug []byte) (err error) {
 	}
 
 	s.wr.Lock()
-        defer s.wr.Unlock()
+	defer s.wr.Unlock()
 
 	f := frame.NewWGoAway()
 	remoteId := frame.StreamId(atomic.LoadUint32(&s.remote.lastId))
@@ -298,7 +298,7 @@ func (s *Session) handleFrame(rf frame.RFrame) {
 		atomic.StoreUint32(&s.remote.lastId, uint32(f.StreamId()))
 
 		// make the new stream
-		str := s.newStream(f.StreamId(), f.RelatedStreamId(), f.StreamPriority(), false, f.Fin(), s.defaultWindowSize, s)
+		str := s.newStream(f.StreamId(), f.RelatedStreamId(), f.StreamPriority(), f.StreamInfo(), false, f.Fin(), s.defaultWindowSize, s)
 
 		// add it to the stream map
 		s.streams.Set(f.StreamId(), str)
@@ -382,7 +382,7 @@ func (s *Session) getStream(id frame.StreamId) (str stream) {
 
 // check if a stream id is for a client stream. client streams are odd
 func (s *Session) isClient(id frame.StreamId) bool {
-	return uint32(id) & 1 == 1
+	return uint32(id)&1 == 1
 }
 
 func (s *Session) isServer(id frame.StreamId) bool {
@@ -392,9 +392,8 @@ func (s *Session) isServer(id frame.StreamId) bool {
 //////////////////////////////////////////////
 // net adaptors
 //////////////////////////////////////////////
-func (s *Session) NetDial(network, addr string) (net.Conn, error) {
-    info := network + ":" + addr
-	str, err := s.OpenEx([]byte(info))
+func (s *Session) NetDial(_, _ string) (net.Conn, error) {
+	str, err := s.Open()
 	return net.Conn(str), err
 }
 

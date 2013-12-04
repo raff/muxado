@@ -36,7 +36,7 @@ func (b *Outbound) Decrement(dec int) (ret int, err error) {
 	}
 
 	b.L.Lock()
-        defer b.L.Unlock()
+	defer b.L.Unlock()
 
 	for {
 		if b.err != nil {

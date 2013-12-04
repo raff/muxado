@@ -34,7 +34,7 @@ const (
 	flagFin            = 0x1
 	flagStreamPriority = 0x2
 	flagRelatedStream  = 0x4
-	flagTransportInfo  = 0x8
+	flagStreamInfo     = 0x8
 )
 
 func (ft flagsType) IsSet(f flagsType) bool {
@@ -59,4 +59,4 @@ type StreamPriority uint32
 type ErrorCode uint32
 
 // Additional info sent on syn request
-type TransportInfo []byte
+type StreamInfo []byte

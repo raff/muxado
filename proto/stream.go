@@ -20,6 +20,7 @@ var (
 type Stream struct {
 	id              frame.StreamId       // stream id (const)
 	relatedStreamId frame.StreamId       // related stream id (const)
+	streamInfo      frame.StreamInfo     // additional stream info (const)
 	session         session              // the parent session (const)
 	inBuffer        *buffer.Inbound      // buffer for data coming in from the remote side
 	outBuffer       *buffer.Outbound     // manages size of the outbound window
@@ -42,12 +43,13 @@ type session interface {
 ////////////////////////////////
 // public interface
 ////////////////////////////////
-func NewStream(id, related frame.StreamId, priority frame.StreamPriority, finLocal bool, finRemote bool, windowSize uint32, sess session) stream {
+func NewStream(id, related frame.StreamId, priority frame.StreamPriority, info frame.StreamInfo, finLocal bool, finRemote bool, windowSize uint32, sess session) stream {
 	str := &Stream{
 		id:              id,
 		inBuffer:        buffer.NewInbound(int(windowSize)),
 		outBuffer:       buffer.NewOutbound(int(windowSize)),
 		relatedStreamId: related,
+		streamInfo:      info,
 		session:         sess,
 		wdata:           frame.NewWStreamData(),
 		winc:            frame.NewWStreamWndInc(),
@@ -127,6 +129,10 @@ func (s *Stream) Id() frame.StreamId {
 
 func (s *Stream) RelatedStreamId() frame.StreamId {
 	return s.relatedStreamId
+}
+
+func (s *Stream) StreamInfo() frame.StreamInfo {
+	return s.streamInfo
 }
 
 func (s *Stream) Session() ISession {

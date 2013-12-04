@@ -16,6 +16,7 @@ type IStream interface {
 	HalfClose([]byte) (int, error)
 	Id() frame.StreamId
 	RelatedStreamId() frame.StreamId
+	StreamInfo() frame.StreamInfo
 	Session() ISession
 	RemoteAddr() net.Addr
 	LocalAddr() net.Addr

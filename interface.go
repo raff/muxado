@@ -8,11 +8,8 @@ import (
 
 type StreamId frame.StreamId
 type StreamPriority frame.StreamPriority
+type StreamInfo frame.StreamInfo
 type ErrorCode frame.ErrorCode
-
-type DialInfo struct {
-    net, addr string
-}
 
 // Stream is a full duplex stream-oriented connection that is multiplexed over a Session.
 // Stream implement the net.Conn inteface.
@@ -46,6 +43,9 @@ type Stream interface {
 	// RelatedStreamId returns the id of the related stream.
 	RelatedStreamId() StreamId
 
+	// StreamInfo returns the additionation info associated to this stream.
+	StreamInfo() StreamInfo
+
 	// Session returns the session object this stream is running on.
 	Session() Session
 
@@ -54,9 +54,6 @@ type Stream interface {
 
 	// LocalAddr returns the session transport's local address.
 	LocalAddr() net.Addr
-
-    // DialInfo returns the details passed via NetDial
-    DialInfo() DialInfo
 }
 
 // Session multiplexes many Streams over a single underlying stream transport.
@@ -120,5 +117,5 @@ type Session interface {
 	// NetDial is a function that implements the same API as net.Dial and can be used in place of it. Users should keep
 	// in mind that it is the same as a call to Open(). It ignores both arguments passed to it, always initiate a new stream
 	// to the remote side.
-	NetDial(net, addr string) (net.Conn, error)
+	NetDial(_, _ string) (net.Conn, error)
 }

@@ -14,6 +14,7 @@ type RStreamSyn struct {
 
 	relatedStreamId StreamId
 	streamPriority  StreamPriority
+	streamInfo      StreamInfo
 }
 
 // RelatedStreamId returns the related stream's id.
@@ -27,6 +28,11 @@ func (f *RStreamSyn) StreamPriority() StreamPriority {
 	return f.streamPriority
 }
 
+// StreamInfo returns the additional info associated to this stream
+func (f *RStreamSyn) StreamInfo() StreamInfo {
+	return f.streamInfo
+}
+
 func (f *RStreamSyn) readFrom(d deserializer) (err error) {
 	if f.Flags().IsSet(flagRelatedStream) {
 		if err := binary.Read(d, order, &f.relatedStreamId); err != nil {
@@ -36,6 +42,20 @@ func (f *RStreamSyn) readFrom(d deserializer) (err error) {
 
 	if f.Flags().IsSet(flagStreamPriority) {
 		if err := binary.Read(d, order, &f.streamPriority); err != nil {
+			return err
+		}
+	}
+
+	if f.Flags().IsSet(flagStreamInfo) {
+		var infoLen uint32
+
+		if err := binary.Read(d, order, &infoLen); err != nil {
+			return err
+		}
+
+		f.streamInfo = make([]byte, infoLen)
+
+		if err := binary.Read(d, order, &f.streamInfo); err != nil {
 			return err
 		}
 	}
@@ -94,6 +114,12 @@ func (f *WStreamSyn) Set(streamId, relatedStreamId StreamId, streamPriority Stre
 		length += 4
 	}
 
+	// add info, if present
+	if len(info) > 0 {
+		flags.Set(flagStreamInfo)
+		length += 4 + len(info)
+	}
+
 	if length > 0 {
 		f.toWrite = make([]byte, length)
 		p := 0
@@ -106,6 +132,14 @@ func (f *WStreamSyn) Set(streamId, relatedStreamId StreamId, streamPriority Stre
 		if flags.IsSet(flagStreamPriority) {
 			order.PutUint32(f.toWrite[p:], uint32(streamPriority))
 			p += 4
+		}
+
+		if flags.IsSet(flagStreamInfo) {
+			order.PutUint32(f.toWrite[p:], uint32(len(info)))
+			p += 4
+
+			copy(f.toWrite[p:], info)
+			p += len(info)
 		}
 	}
 

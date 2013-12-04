@@ -19,11 +19,9 @@ func (a *streamAdaptor) RelatedStreamId() StreamId {
 	return StreamId(a.IStream.RelatedStreamId())
 }
 
-func (a *streamAdaptor) DialInfo() DialInfo {
-	//return DialInfo(a.IStream.DialInfo())
-    return DialInfo{}
+func (a *streamAdaptor) StreamInfo() StreamInfo {
+	return StreamInfo(a.IStream.StreamInfo())
 }
-
 
 func (a *streamAdaptor) Session() Session {
 	return &sessionAdaptor{a.IStream.Session()}

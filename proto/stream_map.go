@@ -24,7 +24,7 @@ type ConcurrentStreamMap struct {
 
 func (m *ConcurrentStreamMap) Get(id frame.StreamId) (s stream, ok bool) {
 	m.RLock()
-        defer m.RUnlock()
+	defer m.RUnlock()
 
 	s, ok = m.table[id]
 	return
@@ -32,7 +32,7 @@ func (m *ConcurrentStreamMap) Get(id frame.StreamId) (s stream, ok bool) {
 
 func (m *ConcurrentStreamMap) Set(id frame.StreamId, str stream) {
 	m.Lock()
-        defer m.Unlock()
+	defer m.Unlock()
 
 	m.table[id] = str
 }
