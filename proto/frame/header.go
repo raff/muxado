@@ -7,7 +7,7 @@ const (
 )
 
 //
-// byte[0-1] - length
+// byte[0-1] - frame length (excluding header)
 // byte[2]   - flags
 // byte[3]   - type
 // byte[4-7] - stream-id
