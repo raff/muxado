@@ -61,7 +61,7 @@ func (f *WStreamSyn) writeTo(s serializer) (err error) {
 	return
 }
 
-func (f *WStreamSyn) Set(streamId, relatedStreamId StreamId, streamPriority StreamPriority, fin bool) (err error) {
+func (f *WStreamSyn) Set(streamId, relatedStreamId StreamId, streamPriority StreamPriority, fin bool, info []byte) (err error) {
 	var (
 		flags  flagsType
 		length int

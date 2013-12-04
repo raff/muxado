@@ -57,3 +57,6 @@ type StreamPriority uint32
 
 // ErrorCode is a 32-bit integer indicating a error condition included in rst/goaway frames
 type ErrorCode uint32
+
+// Additional info sent on syn request
+type TransportInfo []byte

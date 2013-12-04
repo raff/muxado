@@ -23,7 +23,8 @@ type IStream interface {
 
 type ISession interface {
 	Open() (IStream, error)
-	OpenStream(frame.StreamPriority, frame.StreamId, bool) (IStream, error)
+	OpenEx([]byte) (IStream, error)
+	OpenStream(frame.StreamPriority, frame.StreamId, bool, []byte) (IStream, error)
 	Accept() (IStream, error)
 	Kill() error
 	GoAway(frame.ErrorCode, []byte) error

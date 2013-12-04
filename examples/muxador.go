@@ -43,6 +43,9 @@ func main() {
     }
 
     if *server_mode {
+        //
+        // the server
+        //
         log.Println("listening on port", *port)
 
         l, err := muxado.Listen("tcp", *port)
@@ -58,6 +61,9 @@ func main() {
             go handleSession(sess)
         }
     } else {
+        //
+        // the client
+        //
         sess, err := muxado.Dial("tcp", *port)
         if err != nil {
             log.Fatal(err)

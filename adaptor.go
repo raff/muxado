@@ -19,6 +19,12 @@ func (a *streamAdaptor) RelatedStreamId() StreamId {
 	return StreamId(a.IStream.RelatedStreamId())
 }
 
+func (a *streamAdaptor) DialInfo() DialInfo {
+	//return DialInfo(a.IStream.DialInfo())
+    return DialInfo{}
+}
+
+
 func (a *streamAdaptor) Session() Session {
 	return &sessionAdaptor{a.IStream.Session()}
 }
@@ -39,8 +45,13 @@ func (a *sessionAdaptor) Open() (Stream, error) {
 	return &streamAdaptor{str}, err
 }
 
-func (a *sessionAdaptor) OpenStream(priority StreamPriority, related StreamId, fin bool) (Stream, error) {
-	str, err := a.ISession.OpenStream(frame.StreamPriority(priority), frame.StreamId(related), fin)
+func (a *sessionAdaptor) OpenEx(info []byte) (Stream, error) {
+	str, err := a.ISession.OpenEx(info)
+	return &streamAdaptor{str}, err
+}
+
+func (a *sessionAdaptor) OpenStream(priority StreamPriority, related StreamId, fin bool, info []byte) (Stream, error) {
+	str, err := a.ISession.OpenStream(frame.StreamPriority(priority), frame.StreamId(related), fin, info)
 	return &streamAdaptor{str}, err
 }
 

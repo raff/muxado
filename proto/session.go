@@ -31,6 +31,10 @@ type deadReason struct {
 	remoteDebug []byte
 }
 
+type DialInfo struct {
+    net, addr string
+}
+
 // factory function that creates new streams
 type streamFactory func(id, related frame.StreamId, priority frame.StreamPriority, finLocal bool, finRemote bool, windowSize uint32, sess session) stream
 
@@ -98,10 +102,14 @@ func NewSession(conn net.Conn, newStream streamFactory, isClient bool) ISession 
 ////////////////////////////////
 
 func (s *Session) Open() (IStream, error) {
-	return s.OpenStream(0, 0, false)
+	return s.OpenStream(0, 0, false, nil)
 }
 
-func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId frame.StreamId, fin bool) (ret IStream, err error) {
+func (s *Session) OpenEx(info []byte) (IStream, error) {
+	return s.OpenStream(0, 0, false, info)
+}
+
+func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId frame.StreamId, fin bool, info []byte) (ret IStream, err error) {
 	// check if the remote has gone away
 	if atomic.LoadInt32(&s.remote.goneAway) == 1 {
 		return nil, fmt.Errorf("Failed to create stream, remote has gone away.")
@@ -126,7 +134,7 @@ func (s *Session) OpenStream(priority frame.StreamPriority, relatedStreamId fram
 	s.streams.Set(nextId, str)
 
 	// write the frame
-	if err = s.syn.Set(nextId, relatedStreamId, priority, fin); err != nil {
+	if err = s.syn.Set(nextId, relatedStreamId, priority, fin, info); err != nil {
 		s.die(frame.InternalError, err)
 		return
 	}
@@ -384,8 +392,9 @@ func (s *Session) isServer(id frame.StreamId) bool {
 //////////////////////////////////////////////
 // net adaptors
 //////////////////////////////////////////////
-func (s *Session) NetDial(_, _ string) (net.Conn, error) {
-	str, err := s.Open()
+func (s *Session) NetDial(network, addr string) (net.Conn, error) {
+    info := network + ":" + addr
+	str, err := s.OpenEx([]byte(info))
 	return net.Conn(str), err
 }
 
