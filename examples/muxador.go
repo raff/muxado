@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"strings"
+	"sync"
 
 	"github.com/raff/muxado"
 )
@@ -13,16 +14,31 @@ func streamInfo(s muxado.Stream, prefix string) {
 }
 
 func handleStream(stream muxado.Stream) {
+	defer func() {
+		streamInfo(stream, "closing server ")
+		stream.Close()
+	}()
+
+	streamInfo(stream, "server ")
+
+	buffer := make([]byte, 1024)
+
+	if n, err := stream.Read(buffer); err == nil {
+		stream.Write(buffer[:n])
+	} else {
+		log.Println("server read", err)
+	}
 }
 
 func handleSession(sess muxado.Session) {
+	defer sess.Close()
+
 	for {
 		stream, err := sess.Accept()
 		if err != nil {
-			log.Println(err)
+			log.Println("server accept", err)
 			return
 		} else {
-			streamInfo(stream, "server ")
 			go handleStream(stream)
 		}
 	}
@@ -50,13 +66,13 @@ func main() {
 
 		l, err := muxado.Listen("tcp", *port)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("server listen", err)
 		}
 
 		for {
 			sess, err := l.Accept()
 			if err != nil {
-				log.Fatal(err)
+				log.Fatal("listen accept", err)
 			}
 			go handleSession(sess)
 		}
@@ -69,14 +85,42 @@ func main() {
 			log.Fatal(err)
 		}
 
-		stream, err := sess.OpenEx(muxado.StreamInfo("hello from client"))
-		if err != nil {
-			log.Fatal(err)
+		defer sess.Close()
+
+		var wg sync.WaitGroup
+
+		for _, v := range []string{"1", "2", "3"} {
+			wg.Add(1)
+
+			go func(v string, wg *sync.WaitGroup) {
+				stream, err := sess.OpenEx(muxado.StreamInfo("client" + v))
+				if err != nil {
+					log.Fatal("client open", err)
+				}
+
+				defer func() {
+					streamInfo(stream, "closing client ")
+					stream.Close()
+					wg.Done()
+				}()
+
+				streamInfo(stream, "client ")
+
+				for i := 0; i < 10; i++ {
+					stream.Write([]byte("hello there"))
+
+					buffer := make([]byte, 1024)
+
+					if n, err := stream.Read(buffer); err == nil {
+						log.Println("client read", string(buffer[:n]))
+					} else {
+						log.Println("client read", err)
+						break
+					}
+				}
+			}(v, &wg)
 		}
 
-		streamInfo(stream, "client ")
-
-		stream.Write([]byte("hello there"))
-		stream.Close()
+		wg.Wait()
 	}
 }
