@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -13,33 +14,66 @@ func streamInfo(s muxado.Stream, prefix string) {
 	log.Printf("%slocal: %v, remote: %v, id: %v, related: %v, info: %v\n", prefix, s.LocalAddr(), s.RemoteAddr(), s.Id(), s.RelatedStreamId(), string(s.StreamInfo()))
 }
 
-func handleStream(stream muxado.Stream) {
+func handleStream(stream muxado.Stream, id string) {
 	defer func() {
-		streamInfo(stream, "closing server ")
+		streamInfo(stream, "closing "+id)
 		stream.Close()
 	}()
 
-	streamInfo(stream, "server ")
+	streamInfo(stream, id+" ")
 
 	buffer := make([]byte, 1024)
 
 	if n, err := stream.Read(buffer); err == nil {
 		stream.Write(buffer[:n])
 	} else {
-		log.Println("server read", err)
+		log.Println(id, "read", err)
 	}
 }
 
-func handleSession(sess muxado.Session) {
+func handleSession(sess muxado.Session, id string) {
 	defer sess.Close()
 
 	for {
+		log.Println(id, "accept")
+
 		stream, err := sess.Accept()
 		if err != nil {
-			log.Println("server accept", err)
+			log.Println(id, "accept", err)
 			return
 		} else {
-			go handleStream(stream)
+			go handleStream(stream, id)
+		}
+	}
+}
+
+func client(sess muxado.Session, id string, wg *sync.WaitGroup) {
+	//stream, err := sess.OpenEx(muxado.StreamInfo("client" + v))
+	stream, err := sess.Open()
+	if err != nil {
+		log.Fatal(id, "open", err)
+	}
+
+	defer func() {
+		streamInfo(stream, "closing "+id+" ")
+		stream.Close()
+		if wg != nil {
+			wg.Done()
+		}
+	}()
+
+	streamInfo(stream, id+" ")
+
+	for i := 0; i < 10; i++ {
+		stream.Write([]byte("hello there " + strconv.Itoa(i)))
+
+		buffer := make([]byte, 1024)
+
+		if n, err := stream.Read(buffer); err == nil {
+			log.Println(id, "read", string(buffer[:n]))
+		} else {
+			log.Println(id, "read", err)
+			break
 		}
 	}
 }
@@ -74,7 +108,8 @@ func main() {
 			if err != nil {
 				log.Fatal("listen accept", err)
 			}
-			go handleSession(sess)
+			go handleSession(sess, "server")
+			go client(sess, "server", nil)
 		}
 	} else {
 		//
@@ -92,33 +127,8 @@ func main() {
 		for _, v := range []string{"1", "2", "3"} {
 			wg.Add(1)
 
-			go func(v string, wg *sync.WaitGroup) {
-				stream, err := sess.OpenEx(muxado.StreamInfo("client" + v))
-				if err != nil {
-					log.Fatal("client open", err)
-				}
-
-				defer func() {
-					streamInfo(stream, "closing client ")
-					stream.Close()
-					wg.Done()
-				}()
-
-				streamInfo(stream, "client ")
-
-				for i := 0; i < 10; i++ {
-					stream.Write([]byte("hello there"))
-
-					buffer := make([]byte, 1024)
-
-					if n, err := stream.Read(buffer); err == nil {
-						log.Println("client read", string(buffer[:n]))
-					} else {
-						log.Println("client read", err)
-						break
-					}
-				}
-			}(v, &wg)
+			go handleSession(sess, "client")
+			go client(sess, "client "+v, &wg)
 		}
 
 		wg.Wait()
