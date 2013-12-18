@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+        "fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -10,24 +11,29 @@ import (
 	"github.com/raff/muxado"
 )
 
-func streamInfo(s muxado.Stream, prefix string) {
-	log.Printf("%slocal: %v, remote: %v, id: %v, related: %v, info: %v\n", prefix, s.LocalAddr(), s.RemoteAddr(), s.Id(), s.RelatedStreamId(), string(s.StreamInfo()))
+type Stream struct {
+    muxado.Stream
 }
 
-func handleStream(stream muxado.Stream, id string) {
+func (s *Stream) log(fmts string, args ...interface{}) {
+    id := string(s.StreamInfo()) + ": "
+    log.Println(id + fmt.Sprintf(fmts, args...))
+}
+
+func handleStream(stream *Stream, id string) {
 	defer func() {
-		streamInfo(stream, "closing "+id)
+		stream.log("closing stream")
 		stream.Close()
 	}()
 
-	streamInfo(stream, id+" ")
+	stream.log("handle stream")
 
 	buffer := make([]byte, 1024)
 
 	if n, err := stream.Read(buffer); err == nil {
 		stream.Write(buffer[:n])
 	} else {
-		log.Println(id, "read", err)
+                stream.log("read error: %s", err)
 	}
 }
 
@@ -42,27 +48,28 @@ func handleSession(sess muxado.Session, id string) {
 			log.Println(id, "accept", err)
 			return
 		} else {
-			go handleStream(stream, id)
+			go handleStream(&Stream{stream}, id)
 		}
 	}
 }
 
 func client(sess muxado.Session, id string, wg *sync.WaitGroup) {
-	//stream, err := sess.OpenEx(muxado.StreamInfo("client" + v))
-	stream, err := sess.Open()
+	s, err := sess.OpenEx(muxado.StreamInfo(id))
 	if err != nil {
 		log.Fatal(id, "open", err)
 	}
 
+        stream := &Stream{s}
+
 	defer func() {
-		streamInfo(stream, "closing "+id+" ")
+		stream.log("closing stream")
 		stream.Close()
 		if wg != nil {
 			wg.Done()
 		}
 	}()
 
-	streamInfo(stream, id+" ")
+	stream.log("client loop")
 
 	for i := 0; i < 10; i++ {
 		stream.Write([]byte("hello there " + strconv.Itoa(i)))
