@@ -19,6 +19,7 @@ type BasicTransport struct {
 	RStreamData
 	RStreamWndInc
 	RGoAway
+        RPing
 }
 
 // WriteFrame writes the given frame to the underlying transport
@@ -62,6 +63,12 @@ func (t *BasicTransport) ReadFrame() (f RFrame, err error) {
 
 	case TypeGoAway:
 		frame := &t.RGoAway
+		frame.Header = t.Header
+		err = frame.readFrom(t)
+		return frame, err
+
+	case TypePing:
+		frame := &t.RPing
 		frame.Header = t.Header
 		err = frame.readFrom(t)
 		return frame, err
