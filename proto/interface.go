@@ -34,5 +34,5 @@ type ISession interface {
 	Close() error
 	Wait() (frame.ErrorCode, error, []byte)
 	NetListener() net.Listener
-	NetDial(_, _ string) (net.Conn, error)
+	NetDial(network, addr string) (net.Conn, error)
 }

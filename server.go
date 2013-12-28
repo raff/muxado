@@ -15,6 +15,10 @@ type Listener struct {
 	wrapped net.Listener
 }
 
+func NewListener(l net.Listener) *Listener {
+	return &Listener{l}
+}
+
 // Accept the next connection from the listener and begin
 // a muxado session on it.
 func (l *Listener) Accept() (Session, error) {

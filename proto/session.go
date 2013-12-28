@@ -392,8 +392,8 @@ func (s *Session) isServer(id frame.StreamId) bool {
 //////////////////////////////////////////////
 // net adaptors
 //////////////////////////////////////////////
-func (s *Session) NetDial(_, _ string) (net.Conn, error) {
-	str, err := s.Open()
+func (s *Session) NetDial(network, addr string) (net.Conn, error) {
+	str, err := s.OpenEx([]byte(network + ":" + addr))
 	return net.Conn(str), err
 }
 
