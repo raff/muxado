@@ -24,7 +24,8 @@ const (
 	TypeStreamData   = 0x3
 	TypeStreamWndInc = 0x4
 	TypeStreamPri    = 0x5
-	TypeGoAway       = 0x6
+	TypeGoAway       = 0x6 // 7 in HTTP/2
+        TypePing         = 0x7 // 6 in HTTP/2
 )
 
 // a flagsType is an 8-bit integer containing frame-specific flag bits in the frame header
@@ -35,6 +36,7 @@ const (
 	flagStreamPriority = 0x2
 	flagRelatedStream  = 0x4
 	flagStreamInfo     = 0x8
+        flagAck            = 0x10
 )
 
 func (ft flagsType) IsSet(f flagsType) bool {
