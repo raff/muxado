@@ -7,6 +7,10 @@ const (
 	pingFrameSize = headerSize + pingBodySize
 )
 
+var (
+        defaultData [pingBodySize]byte
+)
+
 // Ping message
 type RPing struct {
 	Header
@@ -53,7 +57,9 @@ func (f *WPing) Set(streamId StreamId, data []byte, ack bool) (err error) {
 		flags.Set(flagAck)
 	}
 
-        if len(data) != pingBodySize {
+        if len(data) == 0 { // no data
+            data = defaultData[:]
+        } else if len(data) != pingBodySize {
             return protoError("PING length must be %d, got %d", pingBodySize, len(data))
         }
 

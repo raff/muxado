@@ -54,6 +54,10 @@ func (ft *flagsType) Unset(f flagsType) {
 // StreamId is 31-bit integer uniquely identifying a stream within a session
 type StreamId uint32
 
+const (
+    ControlStream StreamId = 0
+)
+
 // StreamPriority is 31-bit integer specifying a stream's priority
 type StreamPriority uint32
 

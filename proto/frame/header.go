@@ -74,6 +74,10 @@ func (b Header) Fin() bool {
 	return b.Flags().IsSet(flagFin)
 }
 
+func (b Header) Ack() bool {
+	return b.Flags().IsSet(flagAck)
+}
+
 func (b Header) SetAll(ftype FrameType, length int, streamId StreamId, flags flagsType) (err error) {
 	if err = b.SetType(ftype); err != nil {
 		return

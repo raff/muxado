@@ -14,6 +14,7 @@ const (
 	firstStream             = 0x100   // streams 0-255 are reserved
 	defaultWindowSize       = 0x10000 // 64KB
 	defaultAcceptQueueDepth = 100
+	defaultInactivityTime   = 10 * time.Second
 )
 
 // private interface for Sessions to call Streams
@@ -67,6 +68,7 @@ type Session struct {
 	newStream         streamFactory     // factory function to make new streams
 	dead              chan deadReason   // dead
 	isLocal           parityFn          // determines if a stream id is local or remote
+	inactive          *time.Timer       // inactivity timer, reset every time there is network activity
 }
 
 func NewSession(conn net.Conn, newStream streamFactory, isClient bool) ISession {
@@ -90,9 +92,14 @@ func NewSession(conn net.Conn, newStream streamFactory, isClient bool) ISession 
 	} else {
 		sess.isLocal = sess.isServer
 		sess.remote.lastId += 1
+		sess.inactive = time.NewTimer(defaultInactivityTime) // only servers check inactivity
 	}
 
 	go sess.reader()
+
+	if !isClient {
+		go sess.pinger()
+	}
 
 	return sess
 }
@@ -269,6 +276,7 @@ func (s *Session) reader() {
 			return
 		}
 
+		s.active()
 		s.handleFrame(f)
 	}
 }
@@ -346,6 +354,13 @@ func (s *Session) handleFrame(rf frame.RFrame) {
 			}
 		})
 
+	case *frame.RPing:
+                if !f.Ack() {
+                    pingF := frame.NewWPing()
+                    pingF.Set(f.StreamId(), f.Body(), true)
+                    go s.writeFrame(pingF, time.Time{})
+                }
+
 	default:
 		s.die(frame.ProtocolError, fmt.Errorf("Unrecognized frame type: %v", reflect.TypeOf(f)))
 		return
@@ -387,6 +402,28 @@ func (s *Session) isClient(id frame.StreamId) bool {
 
 func (s *Session) isServer(id frame.StreamId) bool {
 	return !s.isClient(id)
+}
+
+// pinger() sends a ping frame when the session has been inactive for too long
+func (s *Session) pinger() {
+	for {
+		<-s.inactive.C
+
+		// send ping
+		pingF := frame.NewWPing()
+		pingF.Set(frame.ControlStream, nil, false)
+		if err := s.writeFrame(pingF, time.Time{}); err != nil {
+                    s.die(frame.InternalError, err)
+                    break
+                }
+	}
+}
+
+// reset the inactivity time, since there has been activity
+func (s *Session) active() {
+        if s.inactive != nil {
+	    s.inactive.Reset(defaultInactivityTime)
+        }
 }
 
 //////////////////////////////////////////////
