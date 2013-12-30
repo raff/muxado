@@ -14,7 +14,6 @@ const (
 	firstStream             = 0x100   // streams 0-255 are reserved
 	defaultWindowSize       = 0x10000 // 64KB
 	defaultAcceptQueueDepth = 100
-	defaultInactivityTime   = 10 * time.Second
 )
 
 // private interface for Sessions to call Streams
@@ -69,6 +68,7 @@ type Session struct {
 	dead              chan deadReason   // dead
 	isLocal           parityFn          // determines if a stream id is local or remote
 	inactive          *time.Timer       // inactivity timer, reset every time there is network activity
+        inactivityTime    time.Duration     // duration of inactivity timer. If 0, there is no timer
 }
 
 func NewSession(conn net.Conn, newStream streamFactory, isClient bool) ISession {
@@ -92,14 +92,9 @@ func NewSession(conn net.Conn, newStream streamFactory, isClient bool) ISession 
 	} else {
 		sess.isLocal = sess.isServer
 		sess.remote.lastId += 1
-		sess.inactive = time.NewTimer(defaultInactivityTime) // only servers check inactivity
 	}
 
 	go sess.reader()
-
-	if !isClient {
-		go sess.pinger()
-	}
 
 	return sess
 }
@@ -193,6 +188,25 @@ func (s *Session) GoAway(errorCode frame.ErrorCode, debug []byte) (err error) {
 
 	return
 }
+
+func (s *Session) SetInactivityTime(duration time.Duration) error {
+        s.inactivityTime = duration
+
+        if s.inactive != nil {
+            if duration == 0 {
+	        s.inactive.Stop()
+            } else {
+	        s.inactive.Reset(duration)
+            }
+        } else if duration > 0 {
+                // first time
+                s.inactive = time.NewTimer(duration)
+		go s.pinger()
+        }
+
+        return nil
+}
+
 
 func (s *Session) LocalAddr() net.Addr {
 	return s.conn.LocalAddr()
@@ -421,8 +435,8 @@ func (s *Session) pinger() {
 
 // reset the inactivity time, since there has been activity
 func (s *Session) active() {
-        if s.inactive != nil {
-	    s.inactive.Reset(defaultInactivityTime)
+        if s.inactivityTime > 0 && s.inactive != nil {
+	    s.inactive.Reset(s.inactivityTime)
         }
 }
 

@@ -1,6 +1,8 @@
 package muxado
 
 import (
+	"time"
+
 	"github.com/raff/muxado/proto"
 	"github.com/raff/muxado/proto/frame"
 )
@@ -60,4 +62,8 @@ func (a *sessionAdaptor) GoAway(code ErrorCode, debug []byte) error {
 func (a *sessionAdaptor) Wait() (ErrorCode, error, []byte) {
 	code, err, debug := a.ISession.Wait()
 	return ErrorCode(code), err, debug
+}
+
+func (a *sessionAdaptor) SetInactivityTime(duration time.Duration) error {
+	return a.ISession.SetInactivityTime(duration)
 }

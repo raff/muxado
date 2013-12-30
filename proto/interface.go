@@ -29,6 +29,7 @@ type ISession interface {
 	Accept() (IStream, error)
 	Kill() error
 	GoAway(frame.ErrorCode, []byte) error
+        SetInactivityTime(time.Duration) error
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
 	Close() error

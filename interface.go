@@ -99,6 +99,10 @@ type Session interface {
 	// GoAway() will return an error.
 	GoAway(ErrorCode, []byte) error
 
+	// SetInactivityTime set the maximum amount of time with no network activity, after which the server
+	// sends a PING message
+	SetInactivityTime(time.Duration) error
+
 	// LocalAddr returns the local address of the transport stream over which the session is running.
 	LocalAddr() net.Addr
 
