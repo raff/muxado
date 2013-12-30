@@ -32,8 +32,7 @@ func (f *RPing) readFrom(d deserializer) (err error) {
 
 type WPing struct {
 	Header
-        fixed [headerSize]byte
-	body []byte
+        fixed [pingFrameSize]byte
 }
 
 func NewWPing() (f *WPing) {
@@ -43,11 +42,7 @@ func NewWPing() (f *WPing) {
 }
 
 func (f *WPing) writeTo(s serializer) (err error) {
-	if _, err = s.Write(f.fixed[:]); err != nil {
-	    return
-        }
-
-        _, err = s.Write(f.body)
+	_, err = s.Write(f.fixed[:])
         return
 }
 
@@ -57,16 +52,17 @@ func (f *WPing) Set(streamId StreamId, data []byte, ack bool) (err error) {
 		flags.Set(flagAck)
 	}
 
-        if len(data) == 0 { // no data
-            data = defaultData[:]
-        } else if len(data) != pingBodySize {
-            return protoError("PING length must be %d, got %d", pingBodySize, len(data))
+        if len(data) != 0 {
+            if len(data) != pingBodySize {
+                return protoError("PING length must be %d, got %d", pingBodySize, len(data))
+            }
+
+	    copy(f.fixed[headerSize:], data)
         }
 
 	if err = f.Header.SetAll(TypePing, pingBodySize, streamId, flags); err != nil {
 		return
 	}
 
-	f.body = data
 	return
 }

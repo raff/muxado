@@ -40,6 +40,7 @@ func (f *WStreamData) writeTo(s serializer) (err error) {
 		return err
 	}
 
+        // note that this causes TWO network writes
 	if _, err = s.Write(f.toWrite); err != nil {
 		return err
 	}
