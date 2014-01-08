@@ -1,6 +1,7 @@
 package frame
 
 import (
+        "bufio"
 	"encoding/binary"
 )
 
@@ -70,14 +71,17 @@ type WStreamSyn struct {
 }
 
 func (f *WStreamSyn) writeTo(s serializer) (err error) {
-	if _, err = s.Write(f.fixed[:]); err != nil {
+        w := bufio.NewWriter(s)
+
+	if _, err = w.Write(f.fixed[:]); err != nil {
 		return err
 	}
 
-	if _, err = s.Write(f.toWrite); err != nil {
+	if _, err = w.Write(f.toWrite); err != nil {
 		return err
 	}
 
+        err = w.Flush()
 	return
 }
 

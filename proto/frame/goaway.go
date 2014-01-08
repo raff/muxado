@@ -1,6 +1,9 @@
 package frame
 
-import "io"
+import (
+    "io"
+    "bufio"
+    )
 
 const (
 	goAwayBodySize  = 8
@@ -46,14 +49,17 @@ type WGoAway struct {
 }
 
 func (f *WGoAway) writeTo(s serializer) (err error) {
-	if _, err = s.Write(f.data[:]); err != nil {
+        w := bufio.NewWriter(s)
+
+	if _, err = w.Write(f.data[:]); err != nil {
 		return
 	}
 
-	if _, err = s.Write(f.debug); err != nil {
+	if _, err = w.Write(f.debug); err != nil {
 		return
 	}
 
+        err = w.Flush(); 
 	return
 }
 

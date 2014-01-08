@@ -2,6 +2,7 @@ package frame
 
 import (
 	"io"
+        "bufio"
 )
 
 const (
@@ -36,15 +37,17 @@ type WStreamData struct {
 }
 
 func (f *WStreamData) writeTo(s serializer) (err error) {
-	if _, err = s.Write(f.fixed[:]); err != nil {
+        w := bufio.NewWriter(s)
+
+	if _, err = w.Write(f.fixed[:]); err != nil {
 		return err
 	}
 
-        // note that this causes TWO network writes
-	if _, err = s.Write(f.toWrite); err != nil {
+	if _, err = w.Write(f.toWrite); err != nil {
 		return err
 	}
 
+        err = w.Flush()
 	return
 }
 
